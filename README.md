@@ -104,7 +104,7 @@ def analyze_resume_match(resume_text, job_description):
             "MissingKeywords": [],
             "Profile_Summary": "Error in analysis"
         }
-
+    
 @app.route('/api/jobs/create', methods=['POST'])
 def create_job():
     try:
@@ -205,7 +205,8 @@ def upload_resumes(job_id):
                 "email": "",
                 "phone": "",
                 "current_job_title": "",
-                "education": ""
+                "education": "",
+                "skills": []
             }}
             """
 
@@ -224,7 +225,8 @@ def upload_resumes(job_id):
                         "email": "N/A",
                         "phone": "N/A",
                         "current_job_title": "N/A",
-                        "education": "N/A"
+                        "education": "N/A",
+                        "skills": []
                     }
 
                 # Analyze resume match
@@ -239,6 +241,7 @@ def upload_resumes(job_id):
                     "phone": extracted_data.get('phone', 'N/A'),
                     "current_job_title": extracted_data.get('current_job_title', 'N/A'),
                     "education": extracted_data.get('education', 'N/A'),
+                    "skills": extracted_data.get('skills', []),
                     "uploaded_at": datetime.utcnow(),
                     "match_result": match_result,
                     "match_percentage": float(match_result['JD_Match'].rstrip('%'))
@@ -353,5 +356,6 @@ def get_all_candidates():
     except Exception as e:
         print(f"Error retrieving candidates: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
