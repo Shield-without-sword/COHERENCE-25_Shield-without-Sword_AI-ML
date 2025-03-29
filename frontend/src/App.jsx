@@ -1,7 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import EmployeeManagementApp from './Elements/EmployeeManagementApp';
-import EmployeeDetails from './Elements/EmployeeDetails';
 import Sidebar from './components/Sidebar';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
@@ -15,6 +13,14 @@ import AvatarQA from './components/AvatarQA';
 import { Toaster } from "sonner";
 
 function App() {
+  // Add CSS variable for navbar height
+  useEffect(() => {
+    // Set a default if the variable isn't set yet
+    if (!document.documentElement.style.getPropertyValue('--navbar-height')) {
+      document.documentElement.style.setProperty('--navbar-height', '64px');
+    }
+  }, []);
+
   return (
     <>
       <BrowserRouter>
@@ -23,24 +29,26 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
-
-          {/* Dashboard routes with Sidebar */}
+          
+          {/* Dashboard routes with Navbar */}
           <Route
             path="/*"
             element={
-              <div className="flex">
-                <Sidebar />
-                <main className="flex-1 p-8 bg-slate-50 min-h-screen">
-                  <Routes>
-                    <Route path="/" element={<Navigate to="/jobs" />} />
-                    <Route path="/jobs" element={<JobListings />} />
-                    <Route path="/jobs/create" element={<JobCreationForm />} />
-                    <Route path="/jobs/:jobId" element={<JobDetails />} />
-                    <Route path="feature" element={<Feature />} />
-                    <Route path="statistics" element={<Statistics />} />
-                    <Route path="/interview" element={<AvatarQA />} />
-                  </Routes>
-                </main>
+              <div className="flex flex-col min-h-screen">
+                <div className="flex flex-1" style={{ marginTop: 'var(--navbar-height, 64px)' }}>
+                  <Sidebar />
+                  <main className="flex-1 p-8 bg-slate-50 min-h-screen">
+                    <Routes>
+                      <Route path="/" element={<Navigate to="/jobs" />} />
+                      <Route path="/jobs" element={<JobListings />} />
+                      <Route path="/jobs/create" element={<JobCreationForm />} />
+                      <Route path="/jobs/:jobId" element={<JobDetails />} />
+                      <Route path="feature" element={<Feature />} />
+                      <Route path="statistics" element={<Statistics />} />
+                      <Route path="/interview" element={<AvatarQA />} />
+                    </Routes>
+                  </main>
+                </div>
               </div>
             }
           />
