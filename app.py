@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo
 from bson.objectid import ObjectId
@@ -103,7 +104,7 @@ def analyze_resume_match(resume_text, job_description):
             "MissingKeywords": [],
             "Profile_Summary": "Error in analysis"
         }
-
+    
 @app.route('/api/jobs/create', methods=['POST'])
 def create_job():
     try:
@@ -204,7 +205,8 @@ def upload_resumes(job_id):
                 "email": "",
                 "phone": "",
                 "current_job_title": "",
-                "education": ""
+                "education": "",
+                "skills": []
             }}
             """
 
@@ -223,7 +225,8 @@ def upload_resumes(job_id):
                         "email": "N/A",
                         "phone": "N/A",
                         "current_job_title": "N/A",
-                        "education": "N/A"
+                        "education": "N/A",
+                        "skills": []
                     }
 
                 # Analyze resume match
@@ -238,6 +241,7 @@ def upload_resumes(job_id):
                     "phone": extracted_data.get('phone', 'N/A'),
                     "current_job_title": extracted_data.get('current_job_title', 'N/A'),
                     "education": extracted_data.get('education', 'N/A'),
+                    "skills": extracted_data.get('skills', []),
                     "uploaded_at": datetime.utcnow(),
                     "match_result": match_result,
                     "match_percentage": float(match_result['JD_Match'].rstrip('%'))
@@ -334,6 +338,23 @@ def get_candidate_details(candidate_id):
 
     except Exception as e:
         print(f"Error retrieving candidate details: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/api/candidates', methods=['GET'])
+def get_all_candidates():
+    try:
+        # Fetch all candidates from the database
+        candidates = list(mongo.db.candidates.find())
+        
+        # Convert ObjectId to string and format datetime fields
+        for candidate in candidates:
+            candidate['_id'] = str(candidate['_id'])
+            if 'uploaded_at' in candidate:
+                candidate['uploaded_at'] = candidate['uploaded_at'].isoformat()
+        
+        return jsonify(candidates), 200
+    except Exception as e:
+        print(f"Error retrieving candidates: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
 if __name__ == '__main__':

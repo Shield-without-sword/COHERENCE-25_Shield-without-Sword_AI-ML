@@ -5,6 +5,7 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import Statistics from './pages/Statistics';
+import FuturePrediction from './pages/FuturePrediction';
 import Feature from './pages/Feature';
 import JobCreationForm from './pages/JobCreation';
 import JobDetails from './pages/JobDetails';
@@ -30,8 +31,11 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
-          
-          {/* Dashboard routes with Navbar */}
+
+          {/* AvatarQA route without Sidebar */}
+          <Route path="/interview" element={<AvatarQA />} />
+
+          {/* Dashboard routes with Sidebar */}
           <Route
             path="/*"
             element={
@@ -47,7 +51,7 @@ function App() {
                       <Route path="/candidates/:candidateId" element={<CandidateProfile />} />
                       <Route path="feature" element={<Feature />} />
                       <Route path="statistics" element={<Statistics />} />
-                      <Route path="/interview" element={<AvatarQA />} />
+                      <Route path="futurePrediction" element={<FuturePrediction />} />
                     </Routes>
                   </main>
                 </div>

@@ -26,14 +26,19 @@ const Navbar = () => {
       path: '/jobs'
     },
     {
-      title: 'Feature1',
+      title: 'Candidate Directory',
       icon: <UserPlus className="h-5 w-5" />,
-      path: '/dashboard/feature'
+      path: '/feature'
     },
+    // {
+    //   title: 'Statistics',
+    //   icon: <Users className="h-5 w-5" />,
+    //   path: '/statistics'
+    // },
     {
-      title: 'Statistics',
+      title: 'Future Predictions',
       icon: <Users className="h-5 w-5" />,
-      path: '/dashboard/statistics'
+      path: '/futurePrediction'
     }
   ]
 
@@ -43,7 +48,7 @@ const Navbar = () => {
         {/* Logo/Title */}
         <div className="flex items-center space-x-2">
           <Users className="h-8 w-8 text-blue-500" />
-          <span className="text-xl font-bold">EMP Manager</span>
+          <span className="text-xl font-bold">Resume AI</span>
         </div>
 
         {/* Navigation Items */}
