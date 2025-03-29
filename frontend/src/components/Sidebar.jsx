@@ -1,16 +1,8 @@
-import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Button } from "@/components/ui/button"
-import {
-  Users,
-  LayoutDashboard,
-  Menu,
-  UserPlus,
-  LogOut,
-} from "lucide-react"
+import { Button } from '@/components/ui/button'
+import { Users, LayoutDashboard, UserPlus, LogOut } from 'lucide-react'
 
-const Sidebar = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+const Navbar = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -18,9 +10,9 @@ const Sidebar = () => {
 
   const menuItems = [
     {
-      title: 'Dashboard',
+      title: 'Job Listings',
       icon: <LayoutDashboard className="h-5 w-5" />,
-      path: '/dashboard/employee'
+      path: '/jobs'
     },
     {
       title: 'Feature1',
@@ -35,56 +27,40 @@ const Sidebar = () => {
   ]
 
   return (
-    <div className="relative">
-      <div className={`
-        ${isCollapsed ? 'w-16' : 'w-64'} 
-        min-h-screen bg-slate-900 text-white transition-all duration-300 p-4
-      `}>
-        {/* Toggle Button */}
-        <Button 
-          variant="ghost" 
-          size="icon"
-          className="absolute -right-3 top-4 bg-slate-900 rounded-full hover:bg-slate-800"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-        >
-          <Menu className="h-4 w-4 text-white" />
-        </Button>
-
+    <div className="w-full bg-slate-900 text-white py-4 shadow-lg fixed top-0 z-50">
+      <div className="container mx-auto flex justify-between items-center">
         {/* Logo/Title */}
-        <div className="flex items-center space-x-2 mb-8">
+        <div className="flex items-center space-x-2">
           <Users className="h-8 w-8 text-blue-500" />
-          {!isCollapsed && <span className="text-xl font-bold">EMP Manager</span>}
+          <span className="text-xl font-bold">EMP Manager</span>
         </div>
 
         {/* Navigation Items */}
-        <nav className="space-y-2">
+        <nav className="flex space-x-6">
           {menuItems.map((item) => (
             <Button
               key={item.path}
-              variant={isActive(item.path) ? "secondary" : "ghost"}
-              className={`
-                w-full justify-start space-x-3 
-                ${isActive(item.path) ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-slate-800'}
-              `}
+              variant={isActive(item.path) ? 'secondary' : 'ghost'}
+              className={`flex items-center space-x-2 ${isActive(item.path) ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-slate-800'}`}
               onClick={() => navigate(item.path)}
             >
               {item.icon}
-              {!isCollapsed && <span>{item.title}</span>}
+              <span>{item.title}</span>
             </Button>
           ))}
         </nav>
 
-        {/* Logout Button at Bottom */}
+        {/* Logout Button */}
         <Button
           variant="ghost"
-          className="w-full justify-start space-x-3 absolute bottom-4 hover:bg-slate-800"
+          className="flex items-center space-x-2 hover:bg-slate-800"
         >
           <LogOut className="h-5 w-5" />
-          {!isCollapsed && <span>Logout</span>}
+          <span>Logout</span>
         </Button>
       </div>
     </div>
   )
 }
 
-export default Sidebar
+export default Navbar

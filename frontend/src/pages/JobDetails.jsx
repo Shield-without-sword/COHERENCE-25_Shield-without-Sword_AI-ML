@@ -14,8 +14,8 @@ import {
   DialogTrigger 
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { useParams } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
+import { useParams } from 'react-router-dom';
 import { toast } from "sonner";
 import { 
   Table, 
@@ -26,6 +26,11 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import emailjs from '@emailjs/browser';
+
+
+
 const CandidateDetailsDialog = ({ candidate }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -164,6 +169,66 @@ const JobDetails = () => {
     setResumeFiles(Array.from(event.target.files));
   };
 
+const [selectedCandidates, setSelectedCandidates] = useState([]);
+const toggleCandidateSelection = (candidateId) => {
+  setSelectedCandidates(prev =>
+    prev.includes(candidateId)
+      ? prev.filter(id => id !== candidateId)
+      : [...prev, candidateId]
+  );
+};
+  const toggleSelectAll = () => {
+    if (selectedCandidates.length === job.candidates.length) {
+      // If all are selected, deselect all
+      setSelectedCandidates([]);
+    } else {
+      // Select all candidate IDs
+      setSelectedCandidates(job.candidates.map(candidate => candidate._id));
+    }
+  };
+
+  // Send email to selected candidates
+  const sendEmailToSelectedCandidates = async () => {
+    // Validate selection
+    if (selectedCandidates.length === 0) {
+      toast.error("Please select at least one candidate to send an email.");
+      return;
+    }
+  
+    try {
+      // Filter selected candidates
+      const selectedCandidateDetails = job.candidates.filter((candidate) =>
+        selectedCandidates.includes(candidate._id)
+      );
+  
+      // Send emails to each selected candidate
+      const emailPromises = selectedCandidateDetails.map(async (candidate) => {
+        return emailjs.send(
+          import.meta.env.VITE_EMAILJS_SERVICE_ID, // Your EmailJS service ID
+          import.meta.env.VITE_EMAILJS_TEMPLATE_ID, // Your email template ID
+          {
+            candidate_name: candidate.name,
+            candidate_email: candidate.email,
+            job_title: job.title,
+            company_name: job.company,
+          },
+          import.meta.env.VITE_EMAILJS_USER_ID // Your EmailJS user ID
+        );
+      });
+  
+      // Wait for all emails to be sent
+      await Promise.all(emailPromises);
+  
+      // Show success message
+      toast.success(`Emails sent to ${selectedCandidates.length} candidate(s).`);
+  
+      // Clear selection after sending
+      setSelectedCandidates([]);
+    } catch (error) {
+      console.error("Email sending error:", error);
+      toast.error("There was an error sending emails. Please try again.");
+    }
+  };
   const handleResumeUpload = async () => {
     if (resumeFiles.length === 0) {
       toast.warning('Please select files to upload');
@@ -263,7 +328,7 @@ const JobDetails = () => {
         </CardFooter>
       </Card>
 
-{job.candidates && job.candidates.length > 0 && (
+      {job.candidates && job.candidates.length > 0 && (
         <Card className="mt-6">
           <CardHeader>
             <CardTitle>Ranked Candidates</CardTitle>
@@ -272,6 +337,13 @@ const JobDetails = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>
+                    <Checkbox
+                      checked={selectedCandidates.length === job.candidates.length}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Select all candidates"
+                    />
+                  </TableHead>
                   <TableHead>Rank</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Job Match</TableHead>
@@ -281,6 +353,13 @@ const JobDetails = () => {
               <TableBody>
                 {job.candidates.map((candidate, index) => (
                   <TableRow key={candidate._id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedCandidates.includes(candidate._id)}
+                        onCheckedChange={() => toggleCandidateSelection(candidate._id)}
+                        aria-label={`Select ${candidate.name}`}
+                      />
+                    </TableCell>
                     <TableCell>{index + 1}</TableCell>
                     <TableCell>
                       <div className="font-medium">{candidate.name.split(' ')[0]}</div>
@@ -304,11 +383,17 @@ const JobDetails = () => {
               </TableBody>
             </Table>
           </CardContent>
+          <CardFooter>
+            <Button 
+              onClick={sendEmailToSelectedCandidates}
+              disabled={selectedCandidates.length === 0}
+            >
+              Send Email to {selectedCandidates.length} Candidate(s)
+            </Button>
+          </CardFooter>
         </Card>
       )}
-
     </div>
   );
 };
-
 export default JobDetails;

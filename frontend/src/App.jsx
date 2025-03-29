@@ -11,6 +11,7 @@ import Feature from './pages/Feature';
 import JobCreationForm from './pages/JobCreation';
 import JobDetails from './pages/JobDetails';
 import JobListings from './pages/JobListings';
+import AvatarQA from './components/AvatarQA';
 import { Toaster } from "sonner";
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
                     <Route path="/jobs/:jobId" element={<JobDetails />} />
                     <Route path="feature" element={<Feature />} />
                     <Route path="statistics" element={<Statistics />} />
+                    <Route path="/interview" element={<AvatarQA />} />
                   </Routes>
                 </main>
               </div>
