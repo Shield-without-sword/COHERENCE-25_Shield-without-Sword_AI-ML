@@ -9,6 +9,7 @@ import Feature from './pages/Feature';
 import JobCreationForm from './pages/JobCreation';
 import JobDetails from './pages/JobDetails';
 import JobListings from './pages/JobListings';
+import CandidateProfile from './pages/CandidateProfile';
 import AvatarQA from './components/AvatarQA';
 import { Toaster } from "sonner";
 
@@ -43,6 +44,7 @@ function App() {
                       <Route path="/jobs" element={<JobListings />} />
                       <Route path="/jobs/create" element={<JobCreationForm />} />
                       <Route path="/jobs/:jobId" element={<JobDetails />} />
+                      <Route path="/candidates/:candidateId" element={<CandidateProfile />} />
                       <Route path="feature" element={<Feature />} />
                       <Route path="statistics" element={<Statistics />} />
                       <Route path="/interview" element={<AvatarQA />} />

@@ -39,11 +39,13 @@ const CandidateDetailsDialog = ({ candidate }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          View Profile
-        </Button>
-      </DialogTrigger>
+<Button 
+  variant="outline" 
+  size="sm" 
+  onClick={() => window.location.href = `/candidates/${candidate._id}`}
+>
+  View Profile
+</Button>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{firstName}'s Candidate Profile</DialogTitle>

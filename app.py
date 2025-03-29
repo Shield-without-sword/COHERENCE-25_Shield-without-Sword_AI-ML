@@ -311,5 +311,30 @@ def get_job_candidates(job_id):
         print(f"Error retrieving job candidates: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
+@app.route('/api/candidates/<candidate_id>', methods=['GET'])
+def get_candidate_details(candidate_id):
+    try:
+        # Convert candidate_id to ObjectId
+        object_id = ObjectId(candidate_id)
+        
+        # Find the candidate in MongoDB
+        candidate = mongo.db.candidates.find_one({"_id": object_id})
+        
+        if candidate:
+            # Convert ObjectId to string
+            candidate['_id'] = str(candidate['_id'])
+            
+            # Convert datetime fields to ISO format string for JSON serialization
+            if 'uploaded_at' in candidate:
+                candidate['uploaded_at'] = candidate['uploaded_at'].isoformat()
+            
+            return jsonify(candidate), 200
+        else:
+            return jsonify({"error": "Candidate not found"}), 404
+
+    except Exception as e:
+        print(f"Error retrieving candidate details: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
