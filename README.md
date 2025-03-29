@@ -1,361 +1,166 @@
+import React, { useState } from 'react';
 
-from flask import Flask, request, jsonify
-from flask_pymongo import PyMongo
-from bson.objectid import ObjectId
-from datetime import datetime
-from flask_cors import CORS
-import cloudinary
-import cloudinary.uploader
-import google.generativeai as genai
-import PyPDF2
-import io
-import json
+const CareerGrowthPredictor = () => {
+  // Static data - would come from a database in a real implementation
+  const staticEmployeeData = [
+    { id: 1, department: "Engineering", tenure: 4.2, initialRole: "Junior Developer", currentRole: "Senior Developer", learningScore: 85, adaptabilityScore: 78 },
+    { id: 2, department: "Engineering", tenure: 5.6, initialRole: "Software Engineer", currentRole: "Tech Lead", learningScore: 90, adaptabilityScore: 82 },
+    { id: 3, department: "Marketing", tenure: 3.8, initialRole: "Marketing Associate", currentRole: "Marketing Manager", learningScore: 76, adaptabilityScore: 88 },
+    { id: 4, department: "Sales", tenure: 1.2, initialRole: "Sales Representative", currentRole: "Sales Representative", learningScore: 65, adaptabilityScore: 72 },
+    { id: 5, department: "HR", tenure: 7.1, initialRole: "HR Coordinator", currentRole: "HR Director", learningScore: 82, adaptabilityScore: 85 },
+    { id: 6, department: "Engineering", tenure: 2.4, initialRole: "QA Engineer", currentRole: "QA Lead", learningScore: 75, adaptabilityScore: 70 },
+    { id: 7, department: "Marketing", tenure: 1.5, initialRole: "Digital Marketing Specialist", currentRole: "Digital Marketing Specialist", learningScore: 68, adaptabilityScore: 75 },
+    { id: 8, department: "Finance", tenure: 6.3, initialRole: "Accountant", currentRole: "Finance Manager", learningScore: 80, adaptabilityScore: 72 },
+  ];
 
-# Cloudinary Configuration
-cloudinary.config(
-    cloud_name="dqzzfjaqc",
-    api_key="963278231344531",
-    api_secret="_m3DrNq-nfDWkHhfmn3yvivs1ZU"
-)
+  // State for department filter only
+  const [selectedDepartment, setSelectedDepartment] = useState('All');
 
-# Flask App Initialization
-app = Flask(__name__)
-CORS(app)
+  // Get unique departments
+  const departments = ['All', ...new Set(staticEmployeeData.map(employee => employee.department))];
 
-# MongoDB Configuration
-app.config["MONGO_URI"] = "mongodb+srv://shubhambendre04:tGeCJTpuCNIjJVq3@cluster0.mvsff.mongodb.net/job?retryWrites=true&w=majority&appName=Cluster0"
-mongo = PyMongo(app)
+  // Filter employees based on department selection
+  const filteredEmployees = staticEmployeeData.filter(employee => 
+    selectedDepartment === 'All' || employee.department === selectedDepartment
+  );
 
-# Gemini API Configuration
-genai.configure(api_key="AIzaSyDdK7ukD2lO9kli33tX1v0wv1RBzbxhAgY")
+  // Categorize employees based on tenure
+  const longTermThreshold = 4; // Employees with tenure ≥ 4 years are considered long-term
+  const longTermEmployees = filteredEmployees.filter(e => e.tenure >= longTermThreshold);
+  const shortTermEmployees = filteredEmployees.filter(e => e.tenure < longTermThreshold);
+  
+  // Calculate average metrics
+  const avgLearningLongTerm = longTermEmployees.length > 0 
+    ? Math.round(longTermEmployees.reduce((sum, e) => sum + e.learningScore, 0) / longTermEmployees.length)
+    : 0;
+  
+  const avgAdaptabilityLongTerm = longTermEmployees.length > 0 
+    ? Math.round(longTermEmployees.reduce((sum, e) => sum + e.adaptabilityScore, 0) / longTermEmployees.length)
+    : 0;
+  
+  // Calculate promotion rate
+  const promotionRate = longTermEmployees.length > 0 
+    ? Math.round(longTermEmployees.filter(e => e.initialRole !== e.currentRole).length / longTermEmployees.length * 100)
+    : 0;
 
-def extract_pdf_text(file):
-    """
-    Extract text from PDF file
-    """
-    try:
-        pdf_reader = PyPDF2.PdfReader(io.BytesIO(file.read()))
-        text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text()
-        return text
-    except Exception as e:
-        print(f"PDF extraction error: {e}")
-        return ""
+  // Format retention data for visual clarity
+  const retentionPercentage = Math.round((longTermEmployees.length / filteredEmployees.length) * 100);
 
-def analyze_resume_match(resume_text, job_description):
-    """
-    Analyze resume matching with job description using Gemini
-    """
-    model = genai.GenerativeModel('gemini-1.5-pro-latest')
-    
-    prompt = f"""
-    You are an expert technical recruiter specializing in tech roles (Software Engineering, Data Science, Data Analyst, Big Data Engineering).
+  return (
+    <div className="p-6 max-w-4xl mx-auto bg-gray-50">
+      <h1 className="text-2xl font-bold text-gray-800 mb-4">Candidate Potential & Career Growth Predictor</h1>
+      <p className="text-gray-600 mb-6">Analyze which employee traits lead to longer tenure and career growth</p>
+      
+      {/* Simple Department Filter */}
+      <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <div className="flex items-center">
+          <label className="font-medium text-gray-700 mr-3">Department:</label>
+          <select 
+            className="p-2 border border-gray-300 rounded-md"
+            value={selectedDepartment}
+            onChange={(e) => setSelectedDepartment(e.target.value)}
+          >
+            {departments.map(dept => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
-    Carefully analyze the following resume and job description:
-
-    Resume:
-    {resume_text}
-
-    Job Description:
-    {job_description}
-
-    Your task is to:
-    1. Calculate precise percentage match between resume and job description
-    2. Identify missing keywords critical for the role
-    3. Provide a concise profile summary
-
-    Return ONLY a JSON in this exact format:
-    {{
-        "JD_Match": "X%",
-        "MissingKeywords": [],
-        "Profile_Summary": "Concise evaluation of candidate's profile"
-    }}
-
-    Guidelines:
-    - Match percentage based on skills, experience, and relevance
-    - Be critical and competitive in assessment
-    - Missing keywords should be specific technical skills or experience gaps
-    - Profile summary should highlight strengths and potential improvements
-    """
-
-    try:
-        response = model.generate_content(prompt)
+      {/* Key Metrics - Simplified */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow text-center">
+          <h2 className="text-lg font-semibold mb-2">Employee Retention</h2>
+          <div className="relative pt-1">
+            <div className="flex mb-2 items-center justify-between">
+              <div>
+                <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+                  {retentionPercentage}% stay 4+ years
+                </span>
+              </div>
+            </div>
+            <div className="overflow-hidden h-4 mb-4 text-xs flex rounded bg-blue-200">
+              <div style={{ width: `${retentionPercentage}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-600"></div>
+            </div>
+          </div>
+        </div>
         
-        # Safely parse the JSON response
-        try:
-            # Remove any markdown code block markers
-            json_str = response.text.strip('```json\n```')
-            match_data = json.loads(json_str)
-        except json.JSONDecodeError:
-            # Fallback to a default structure if JSON parsing fails
-            match_data = {
-                "JD_Match": "0%",
-                "MissingKeywords": [],
-                "Profile_Summary": "Unable to parse resume details"
-            }
+        <div className="bg-white p-4 rounded-lg shadow text-center">
+          <h2 className="text-lg font-semibold mb-2">Critical Skills for Retention</h2>
+          <div className="text-4xl font-bold text-green-600">{avgLearningLongTerm}</div>
+          <div className="text-sm text-gray-600">Learning Score</div>
+          <div className="text-4xl font-bold text-blue-600 mt-2">{avgAdaptabilityLongTerm}</div>
+          <div className="text-sm text-gray-600">Adaptability Score</div>
+        </div>
         
-        return match_data
-    
-    except Exception as e:
-        print(f"Error in resume matching: {e}")
-        return {
-            "JD_Match": "0%",
-            "MissingKeywords": [],
-            "Profile_Summary": "Error in analysis"
-        }
-    
-@app.route('/api/jobs/create', methods=['POST'])
-def create_job():
-    try:
-        # Get job data from request
-        job_data = request.json
+        <div className="bg-white p-4 rounded-lg shadow text-center">
+          <h2 className="text-lg font-semibold mb-2">Career Advancement</h2>
+          <div className="text-5xl font-bold text-purple-600">{promotionRate}%</div>
+          <div className="text-sm text-gray-600 mt-2">of long-term employees receive promotions</div>
+        </div>
+      </div>
 
-        # Validate required fields
-        required_fields = ['title', 'description', 'department']
-        for field in required_fields:
-            if not job_data.get(field):
-                return jsonify({"error": f"{field} is required"}), 400
+      {/* Employee Data Table - Simplified */}
+      <div className="bg-white p-4 rounded-lg shadow overflow-hidden">
+        <h2 className="text-lg font-semibold mb-4">Employee Success Patterns</h2>
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tenure</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Career Growth</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Success Score</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {filteredEmployees.map((employee) => {
+              const successScore = Math.round((employee.learningScore * 0.6) + (employee.adaptabilityScore * 0.4));
+              let scoreClass = "text-red-600";
+              if (successScore >= 80) scoreClass = "text-green-600 font-medium";
+              else if (successScore >= 70) scoreClass = "text-yellow-600";
+              
+              return (
+                <tr key={employee.id}>
+                  <td className="px-4 py-2 text-sm text-gray-900">{employee.department}</td>
+                  <td className="px-4 py-2 text-sm text-gray-500">
+                    {employee.tenure >= longTermThreshold ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800">
+                        {employee.tenure.toFixed(1)} years
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-800">
+                        {employee.tenure.toFixed(1)} years
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2 text-sm text-gray-500">
+                    {employee.initialRole !== employee.currentRole ? (
+                      <span className="text-green-600">{employee.initialRole} → {employee.currentRole}</span>
+                    ) : (
+                      <span className="text-gray-500">No Change</span>
+                    )}
+                  </td>
+                  <td className={`px-4 py-2 text-sm ${scoreClass}`}>
+                    {successScore}
+                    {successScore >= 80 && " ★"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Simple Explanation */}
+      <div className="bg-blue-50 p-4 rounded-lg shadow mt-6">
+        <h2 className="text-lg font-semibold mb-2">How To Use This Tool</h2>
+        <p className="text-sm text-gray-700">
+          The Success Score formula (60% Learning + 40% Adaptability) helps predict which candidates will stay longer and grow within the company. 
+          Candidates with scores of 80+ have shown the highest retention and promotion rates in our historical data.
+        </p>
+      </div>
+    </div>
+  );
+};
 
-        # Prepare job document
-        job_document = {
-            "title": job_data['title'],
-            "department": job_data['department'],
-            "location": job_data.get('location', ''),
-            "description": job_data['description'],
-            "required_skills": job_data.get('requiredSkills', []),
-            "experience_level": job_data.get('experienceLevel', ''),
-            "min_experience": job_data.get('minExperience', 0),
-            "max_experience": job_data.get('maxExperience', 0),
-            "created_at": datetime.utcnow(),
-            "status": "active"
-        }
-
-        # Insert job into MongoDB
-        result = mongo.db.jobs.insert_one(job_document)
-
-        return jsonify({
-            "message": "Job created successfully",
-            "job_id": str(result.inserted_id)
-        }), 201
-
-    except Exception as e:
-        print(f"Error creating job: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
-
-@app.route('/api/jobs', methods=['GET'])
-def get_jobs():
-    try:
-        # Retrieve all active jobs
-        jobs = list(mongo.db.jobs.find({"status": "active"}))
-        
-        # Convert ObjectId to string
-        for job in jobs:
-            job['_id'] = str(job['_id'])
-        
-        return jsonify(jobs), 200
-
-    except Exception as e:
-        print(f"Error retrieving jobs: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
-
-@app.route('/api/jobs/<job_id>/upload-resumes', methods=['POST'])
-def upload_resumes(job_id):
-    try:
-        # Check if files were uploaded
-        if 'resumes' not in request.files:
-            return jsonify({"error": "No files uploaded"}), 400
-
-        uploaded_resumes = []
-        candidate_details = []
-
-        # Fetch the job description
-        job = mongo.db.jobs.find_one({"_id": ObjectId(job_id)})
-        job_description = job.get('description', '')
-
-        # Process each uploaded file
-        for file in request.files.getlist('resumes'):
-            # Upload resume to Cloudinary
-            try:
-                upload_result = cloudinary.uploader.upload(
-                    file, 
-                    folder='resumes',
-                    resource_type='raw'
-                )
-            except Exception as e:
-                print(f"Cloudinary upload error: {e}")
-                return jsonify({"error": "Failed to upload to Cloudinary"}), 500
-            
-            resume_url = upload_result['secure_url']
-
-            # Extract text from PDF
-            file.seek(0)  # Reset file pointer
-            resume_text = extract_pdf_text(file)
-
-            # Use Gemini to extract candidate information
-            model = genai.GenerativeModel('gemini-1.5-pro-latest')
-            
-            prompt = f"""
-            Extract the following information from the resume text:
-            Resume Text: {resume_text}
-
-            Please return a JSON with these fields:
-            {{
-                "full_name": "",
-                "email": "",
-                "phone": "",
-                "current_job_title": "",
-                "education": "",
-                "skills": []
-            }}
-            """
-
-            try:
-                response = model.generate_content(prompt)
-                
-                # Try to parse the response safely
-                try:
-                    # Remove any markdown code block markers
-                    json_str = response.text.strip('```json\n```')
-                    extracted_data = json.loads(json_str)
-                except json.JSONDecodeError:
-                    # Fallback parsing if direct JSON fails
-                    extracted_data = {
-                        "full_name": "N/A",
-                        "email": "N/A",
-                        "phone": "N/A",
-                        "current_job_title": "N/A",
-                        "education": "N/A",
-                        "skills": []
-                    }
-
-                # Analyze resume match
-                match_result = analyze_resume_match(resume_text, job_description)
-
-                # Prepare candidate information
-                candidate_info = {
-                    "job_id": job_id,
-                    "resume_url": resume_url,
-                    "name": extracted_data.get('full_name', 'N/A'),
-                    "email": extracted_data.get('email', 'N/A'),
-                    "phone": extracted_data.get('phone', 'N/A'),
-                    "current_job_title": extracted_data.get('current_job_title', 'N/A'),
-                    "education": extracted_data.get('education', 'N/A'),
-                    "skills": extracted_data.get('skills', []),
-                    "uploaded_at": datetime.utcnow(),
-                    "match_result": match_result,
-                    "match_percentage": float(match_result['JD_Match'].rstrip('%'))
-                }
-
-                # Store candidate information in MongoDB
-                result = mongo.db.candidates.insert_one(candidate_info)
-                candidate_info['_id'] = str(result.inserted_id)
-
-                uploaded_resumes.append(resume_url)
-                candidate_details.append(candidate_info)
-
-            except Exception as parse_error:
-                print(f"Error parsing resume: {parse_error}")
-                # Continue with other files even if one fails
-                continue
-
-        return jsonify({
-            "message": "Resumes uploaded successfully",
-            "uploaded_resumes": uploaded_resumes,
-            "candidate_details": candidate_details
-        }), 201
-
-    except Exception as e:
-        print(f"Error uploading resumes: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
-
-@app.route('/api/jobs/<job_id>', methods=['GET'])
-def get_job_details(job_id):
-    try:
-        # Convert job_id to ObjectId
-        object_id = ObjectId(job_id)
-        
-        # Find the job in MongoDB
-        job = mongo.db.jobs.find_one({"_id": object_id})
-        
-        if job:
-            # Convert ObjectId to string
-            job['_id'] = str(job['_id'])
-            
-            # Convert datetime to ISO format string for JSON serialization
-            job['created_at'] = job['created_at'].isoformat()
-            
-            # Fetch candidates for this job, sorted by match percentage in descending order
-            candidates = list(mongo.db.candidates.find({"job_id": job_id}).sort("match_percentage", -1))
-            for candidate in candidates:
-                candidate['_id'] = str(candidate['_id'])
-            
-            job['candidates'] = candidates
-            
-            return jsonify(job), 200
-        else:
-            return jsonify({"error": "Job not found"}), 404
-
-    except Exception as e:
-        print(f"Error retrieving job details: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
-
-@app.route('/api/jobs/<job_id>/candidates', methods=['GET'])
-def get_job_candidates(job_id):
-    try:
-        # Fetch candidates for this job, sorted by match percentage in descending order
-        candidates = list(mongo.db.candidates.find({"job_id": job_id}).sort("match_percentage", -1))
-        
-        for candidate in candidates:
-            candidate['_id'] = str(candidate['_id'])
-        
-        return jsonify(candidates), 200
-
-    except Exception as e:
-        print(f"Error retrieving job candidates: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
-
-@app.route('/api/candidates/<candidate_id>', methods=['GET'])
-def get_candidate_details(candidate_id):
-    try:
-        # Convert candidate_id to ObjectId
-        object_id = ObjectId(candidate_id)
-        
-        # Find the candidate in MongoDB
-        candidate = mongo.db.candidates.find_one({"_id": object_id})
-        
-        if candidate:
-            # Convert ObjectId to string
-            candidate['_id'] = str(candidate['_id'])
-            
-            # Convert datetime fields to ISO format string for JSON serialization
-            if 'uploaded_at' in candidate:
-                candidate['uploaded_at'] = candidate['uploaded_at'].isoformat()
-            
-            return jsonify(candidate), 200
-        else:
-            return jsonify({"error": "Candidate not found"}), 404
-
-    except Exception as e:
-        print(f"Error retrieving candidate details: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
-
-@app.route('/api/candidates', methods=['GET'])
-def get_all_candidates():
-    try:
-        # Fetch all candidates from the database
-        candidates = list(mongo.db.candidates.find())
-        
-        # Convert ObjectId to string and format datetime fields
-        for candidate in candidates:
-            candidate['_id'] = str(candidate['_id'])
-            if 'uploaded_at' in candidate:
-                candidate['uploaded_at'] = candidate['uploaded_at'].isoformat()
-        
-        return jsonify(candidates), 200
-    except Exception as e:
-        print(f"Error retrieving candidates: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
-
-if __name__ == '__main__':
-    app.run(debug=True)
+export default CareerGrowthPredictor;
