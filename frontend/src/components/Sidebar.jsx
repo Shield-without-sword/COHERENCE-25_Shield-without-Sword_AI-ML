@@ -1,12 +1,23 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Users, LayoutDashboard, UserPlus, LogOut } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react';
 
 const Navbar = () => {
-  const navigate = useNavigate()
-  const location = useLocation()
+  const navbarRef = useRef(null);
+  const [navbarHeight, setNavbarHeight] = useState(64); // Default height
+  const navigate = useNavigate();
+  const location = useLocation(); // You were missing this
 
-  const isActive = (path) => location.pathname.includes(path)
+  useEffect(() => {
+    if (navbarRef.current) {
+      setNavbarHeight(navbarRef.current.offsetHeight);
+      // Communicate navbar height to parent component if needed
+      document.documentElement.style.setProperty('--navbar-height', `${navbarHeight}px`);
+    }
+  }, [navbarHeight]);
+
+  const isActive = (path) => location.pathname.includes(path);
 
   const menuItems = [
     {
@@ -27,7 +38,7 @@ const Navbar = () => {
   ]
 
   return (
-    <div className="w-full bg-slate-900 text-white py-4 shadow-lg fixed top-0 z-50">
+    <div ref={navbarRef} className="w-full bg-slate-900 text-white py-4 shadow-lg fixed top-0 z-50">
       <div className="container mx-auto flex justify-between items-center">
         {/* Logo/Title */}
         <div className="flex items-center space-x-2">
